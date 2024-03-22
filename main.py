@@ -36,7 +36,7 @@ def download_comments(video_id: str) -> pd.DataFrame:
     Args: video_id (str): The video ID of the YouTube video.
     Returns: DataFrame: A DataFrame containing the downloaded comments from the video.
     """
-    DEV_KEY = "AIzaSyBYCRRe9OBUl1jy0VJzVajyiNrwxRf44r4" #os.getenv('API_KEY_YOUTUBE')  
+    DEV_KEY = os.getenv('API_KEY_YOUTUBE')  
     youtube = googleapiclient.discovery.build("youtube",
                                               "v3",
                                               developerKey=DEV_KEY)
