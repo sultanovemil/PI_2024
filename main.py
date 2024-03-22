@@ -12,29 +12,41 @@ st.title('Анализатор комментариев :red[YouTube] :sunglasse
 # Получаем YouTube API KEY из secrets
 DEVELOPER_KEY = os.getenv('API_KEY_YOUTUBE')
 
-
 # Инициализируем модель Hugging Face для анализа тональности текста
 cls_sent = pipeline("sentiment-analysis",
                     "blanchefort/rubert-base-cased-sentiment")
-st.markdown('***')
-st.sidebar.markdown('# Меню')
-st.sidebar.markdown('***')
+
+
+def extract_video_id(url: str) -> str:
+    """
+    Extracts the video ID from a YouTube video URL.
+    Args:       url (str): The YouTube video URL.
+    Returns:    str: The extracted video ID,
+                or an empty string if the URL is not valid.
+    """
+    pattern = r"(?<=v=)[\w-]+(?=&|\b)"
+    match = re.search(pattern, url)
+    if match:
+        return match.group()
+    else:
+        return ""
+
+
+def change_url():
+    st.session_state.start = False
+
+
+if "start" not in st.session_state:
+    st.session_state.start = False
 
 # Получаем id видеоролика из URL для отправки запроса
-pattern = r"(?<=v=)[\w-]+(?=&|\b)"
-url = st.sidebar.text_input('URL YouTube')
-match = re.search(pattern, url)
-if match:
-    vidID = match.group()
-    st.success('URL', icon="✅")
-else:
-    st.warning('URL', icon="⚠️")
-    vidID = 'iA6TZESpg3o'
+url = st.text_input(label="Enter URL from YouTube", on_change=change_url)
+vidID = extract_video_id(url)
+if  vidID != "":
+    if btn_start := st.button('Загрузить комментарии'):
+        st.session_state.start = True
 
-st.sidebar.markdown('***')
-
-btn_start = st.sidebar.button('Загрузить')
-if btn_start:
+if st.session_state.start:
     # Запрос к YouTube API для получения комментариев к видео
     api_service_name = "youtube"
     api_version = "v3"
