@@ -11,8 +11,17 @@ st.title('Анализатор комментариев :red[YouTube] :sunglasse
 
 
 # Инициализируем модель Hugging Face для анализа тональности текста
-cls_sent = pipeline("sentiment-analysis",
-                    "blanchefort/rubert-base-cased-sentiment")
+# Кэшируем ресурс для одной загрузки модели на все сессии
+@st.cache_resource
+def load_model():
+    """
+    Loads the 'blanchefort/rubert-base-cased-sentiment' model from HuggingFace
+    and saves to cache for consecutive loads.
+    """
+    model = pipeline(
+        "sentiment-analysis",
+        "blanchefort/rubert-base-cased-sentiment")
+    return model
 
 
 def extract_video_id(url: str) -> str:
@@ -60,7 +69,7 @@ def download_comments(video_id: str) -> pd.DataFrame:
                                 'text',])
 
 
-def analyze_emotions_in_comments(model, df: pd.DataFrame) -> tuple:
+def analyze_emotions_in_comments(df: pd.DataFrame) -> tuple:
     """
     Takes a DataFrame with comments, 
     processes the emotional sentiment of each comment in the DataFrame
@@ -68,6 +77,7 @@ def analyze_emotions_in_comments(model, df: pd.DataFrame) -> tuple:
     Returns: tuple: containing the updated DataFrame with the added 'Emotional Sentiment' column
     and the total count of processed comments.
     """
+    model = load_model()
     selected_columns = ['text', 'author', 'published_at']
     df = df[selected_columns]
     res_list = []    
@@ -94,7 +104,7 @@ if st.session_state.start:
     # Выводим таблицу с результатами на странице
     comments_df = download_comments(video_id)
     with st.spinner('Analyzing comments...'):
-        full_df,  num_comments = analyze_emotions_in_comments(cls_sent, comments_df)
+        full_df,  num_comments = analyze_emotions_in_comments(comments_df)
         st.success(f'Готово! Обработано {num_comments} комментариев.')     
     st.write(full_df)
     st.markdown('***')
