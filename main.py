@@ -9,8 +9,6 @@ import seaborn as sns
 
 st.title('Анализатор комментариев :red[YouTube] :sunglasses:')
 
-# Получаем YouTube API KEY из secrets
-DEVELOPER_KEY = os.getenv('API_KEY_YOUTUBE')
 
 # Инициализируем модель Hugging Face для анализа тональности текста
 cls_sent = pipeline("sentiment-analysis",
@@ -32,6 +30,36 @@ def extract_video_id(url: str) -> str:
         return ""
 
 
+def download_comments(video_id: str) -> pd.DataFrame:
+    """
+    Downloads comments from a YouTube video based on the provided video ID and returns them as a DataFrame.
+    Args: video_id (str): The video ID of the YouTube video.
+    Returns: DataFrame: A DataFrame containing the downloaded comments from the video.
+    """
+    DEV_KEY = os.getenv('API_KEY_YOUTUBE')  
+    youtube = googleapiclient.discovery.build("youtube",
+                                              "v3",
+                                              developerKey=DEV_KEY)
+    request = youtube.commentThreads().list(part="snippet",
+                                            videoId=video_id,
+                                            maxResults=100)
+    response = request.execute()
+    comments = []
+    for item in response['items']:
+        comment = item['snippet']['topLevelComment']['snippet']
+        comments.append([comment['authorDisplayName'],
+                        comment['publishedAt'],
+                        comment['updatedAt'],
+                        comment['likeCount'],
+                        comment['textDisplay'],])
+    return pd.DataFrame(comments,
+                        columns=['author',
+                                'published_at',
+                                'updated_at',
+                                'like_count',
+                                'text',])
+
+
 def change_url():
     st.session_state.start = False
 
@@ -41,40 +69,13 @@ if "start" not in st.session_state:
 
 # Получаем id видеоролика из URL для отправки запроса
 url = st.text_input(label="Enter URL from YouTube", on_change=change_url)
-vidID = extract_video_id(url)
-if  vidID != "":
+video_id = extract_video_id(url)
+if  video_id != "":
     if btn_start := st.button('Загрузить комментарии'):
         st.session_state.start = True
 
-if st.session_state.start:
-    # Запрос к YouTube API для получения комментариев к видео
-    api_service_name = "youtube"
-    api_version = "v3"
-    youtube = googleapiclient.discovery.build(
-        api_service_name, api_version, developerKey=DEVELOPER_KEY)
-    request = youtube.commentThreads().list(
-        part="snippet",
-        videoId=vidID,
-        maxResults=100
-    )
-    response = request.execute()
-    comments = []
-    # Преобразуем полученные комментарии в DataFrame
-    for item in response['items']:
-        comment = item['snippet']['topLevelComment']['snippet']
-        comments.append([
-            comment['authorDisplayName'],
-            comment['publishedAt'],
-            comment['updatedAt'],
-            comment['likeCount'],
-            comment['textDisplay']
-        ])
-    comments_df = pd.DataFrame(comments,
-                               columns=['author',
-                                        'published_at',
-                                        'updated_at',
-                                        'like_count',
-                                        'text'])
+if st.session_state.start:    
+    comments_df = download_comments(video_id)
 
     # Получаем таблицу с комментариями на странице
     st.header('Комментарии из YouTube')
@@ -118,3 +119,4 @@ if st.session_state.start:
     label = full_df['label'].unique()
     ax.pie(data, labels=label, autopct='%1.1f%%')
     st.pyplot(fig)
+
