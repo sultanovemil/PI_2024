@@ -36,7 +36,7 @@ def download_comments(video_id: str) -> pd.DataFrame:
     Args: video_id (str): The video ID of the YouTube video.
     Returns: DataFrame: A DataFrame containing the downloaded comments from the video.
     """
-    DEV_KEY = os.getenv('API_KEY_YOUTUBE')  
+    DEV_KEY = os.getenv('API_KEY_YOUTUBE')
     youtube = googleapiclient.discovery.build("youtube",
                                               "v3",
                                               developerKey=DEV_KEY)
@@ -60,6 +60,22 @@ def download_comments(video_id: str) -> pd.DataFrame:
                                 'text',])
 
 
+def analyze_emotions_in_comments(model, df: pd.DataFrame) -> tuple:
+    """
+    Takes a DataFrame with comments, 
+    processes the emotional sentiment of each comment in the DataFrame
+    Args: dataframe (pandas.DataFrame): DataFrame containing comments to analyze.    
+    Returns: tuple: containing the updated DataFrame with the added 'Emotional Sentiment' column
+    and the total count of processed comments.
+    """
+    selected_columns = ['text', 'author', 'published_at']
+    df = df[selected_columns]
+    res_list = []    
+    res_list = model(df['text'].to_list())       
+    full_df = pd.concat([pd.DataFrame(res_list), df], axis=1)
+    return (full_df, len(res_list))
+
+
 def change_url():
     st.session_state.start = False
 
@@ -74,23 +90,12 @@ if  video_id != "":
     if btn_start := st.button('Загрузить комментарии'):
         st.session_state.start = True
 
-if st.session_state.start:    
-    comments_df = download_comments(video_id)
-
-    # Получаем таблицу с комментариями на странице
-    st.header('Комментарии из YouTube')
-    selected_columns = ['text', 'author', 'published_at']
-    comments_df = comments_df[selected_columns]
-
-    res_list = []
-    # Анализируем тональность комментария с помощью модели Hugging Face
-    with st.spinner('Идет процесс обработки данных...'):
-        res_list = cls_sent(comments_df['text'].to_list())
-    s_label = f'Готово! Обработано {len(res_list)} комментариев.'
-    st.success(s_label)
-
+if st.session_state.start:
     # Выводим таблицу с результатами на странице
-    full_df = pd.concat([pd.DataFrame(res_list), comments_df], axis=1)
+    comments_df = download_comments(video_id)
+    with st.spinner('Analyzing comments...'):
+        full_df,  num_comments = analyze_emotions_in_comments(cls_sent, comments_df)
+        st.success(f'Готово! Обработано {num_comments} комментариев.')     
     st.write(full_df)
     st.markdown('***')
 
@@ -119,4 +124,3 @@ if st.session_state.start:
     label = full_df['label'].unique()
     ax.pie(data, labels=label, autopct='%1.1f%%')
     st.pyplot(fig)
-
