@@ -3,7 +3,7 @@ import re
 import streamlit as st
 import googleapiclient.discovery
 import pandas as pd
-from transformers import pipeline
+from transformers import pipeline, Pipeline
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -11,8 +11,17 @@ st.title('Анализатор комментариев :red[YouTube] :sunglasse
 
 
 # Инициализируем модель Hugging Face для анализа тональности текста
-cls_sent = pipeline("sentiment-analysis",
-                    "blanchefort/rubert-base-cased-sentiment")
+# Кэшируем ресурс для одной загрузки модели на все сессии
+@st.cache_resource
+def load_model() -> Pipeline:
+    """
+    Loads the 'blanchefort/rubert-base-cased-sentiment' model from HuggingFace
+    and saves to cache for consecutive loads.
+    """
+    model = pipeline(
+        "sentiment-analysis",
+        "blanchefort/rubert-base-cased-sentiment")
+    return model
 
 
 def extract_video_id(url: str) -> str:
@@ -75,6 +84,7 @@ if  video_id != "":
         st.session_state.start = True
 
 if st.session_state.start:    
+    cls_sent = load_model()
     comments_df = download_comments(video_id)
 
     # Получаем таблицу с комментариями на странице
