@@ -3,7 +3,7 @@ import re
 import streamlit as st
 import googleapiclient.discovery
 import pandas as pd
-from transformers import pipeline, Pipeline
+from transformers import pipeline
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -13,7 +13,7 @@ st.title('Анализатор комментариев :red[YouTube] :sunglasse
 # Инициализируем модель Hugging Face для анализа тональности текста
 # Кэшируем ресурс для одной загрузки модели на все сессии
 @st.cache_resource
-def load_model() -> Pipeline:
+def load_model():
     """
     Loads the 'blanchefort/rubert-base-cased-sentiment' model from HuggingFace
     and saves to cache for consecutive loads.
