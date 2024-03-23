@@ -86,6 +86,28 @@ def analyze_emotions_in_comments(df: pd.DataFrame) -> tuple:
     return (full_df, len(res_list))
 
 
+def plot_heatmap_from_dataframe(df: pd.DataFrame) -> plt:
+    """
+    Visualizes the data from the input DataFrame and returns a matplotlib plot object.
+    Args: df (DataFrame): The input DataFrame containing the data to be visualized.
+    Returns: plt: A matplotlib plot object showing the visualization of the data.
+    """
+    df['published_at'] = pd.to_datetime(df['published_at'])
+    df['Date'] = df['published_at'].dt.date
+    df['Hour'] = df['published_at'].dt.hour
+    pivot_table = df.pivot_table(index='Hour',
+                                columns='Date',
+                                values='text',
+                                aggfunc='count')
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(pivot_table,
+                cmap='YlGnBu')
+    plt.title('Количество комментариев по часам и датам')
+    plt.xlabel('Дата')
+    plt.ylabel('Час')
+    return plt
+
+
 def change_url():
     st.session_state.start = False
 
@@ -110,20 +132,7 @@ if st.session_state.start:
     st.markdown('***')
 
     # Выводим heatmap комментариев по часам и датам
-    st.header('Комментарии по часам и датам')
-    full_df['published_at'] = pd.to_datetime(full_df['published_at'])
-    full_df['Date'] = full_df['published_at'].dt.date
-    full_df['Hour'] = full_df['published_at'].dt.hour
-    pivot_table = full_df.pivot_table(index='Hour',
-                                      columns='Date',
-                                      values='text',
-                                      aggfunc='count')
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(pivot_table, cmap='YlGnBu')
-    plt.title('Количество комментариев по часам и датам')
-    plt.xlabel('Дата')
-    plt.ylabel('Час')
-    st.pyplot(plt)
+    st.pyplot(plot_heatmap_from_dataframe(full_df))    
     st.markdown('***')
 
     # Создаем круговую диаграмму
