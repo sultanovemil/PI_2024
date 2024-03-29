@@ -41,7 +41,8 @@ def extract_video_id(url: str) -> str:
 
 def download_comments(video_id: str) -> pd.DataFrame:
     """
-    Downloads comments from a YouTube video based on the provided video ID and returns them as a DataFrame.
+    Downloads comments from a YouTube video based on the provided video ID
+    and returns them as a DataFrame.
     Args: video_id (str): The video ID of the YouTube video.
     Returns: DataFrame: A DataFrame containing the downloaded comments from the video.
     """
@@ -71,9 +72,9 @@ def download_comments(video_id: str) -> pd.DataFrame:
 
 def analyze_emotions_in_comments(df: pd.DataFrame) -> tuple:
     """
-    Takes a DataFrame with comments, 
+    Takes a DataFrame with comments,
     processes the emotional sentiment of each comment in the DataFrame
-    Args: dataframe (pandas.DataFrame): DataFrame containing comments to analyze.    
+    Args: dataframe (pandas.DataFrame): DataFrame containing comments to analyze.
     Returns: tuple: containing the updated DataFrame with the added 'Emotional Sentiment' column
     and the total count of processed comments.
     """
@@ -108,6 +109,21 @@ def plot_heatmap_from_dataframe(df: pd.DataFrame) -> plt:
     return plt
 
 
+def visualize_data(df: pd.DataFrame):
+    """
+    Visualizes the data from the input DataFrame and returns a matplotlib figure object.
+    Args: df (DataFrame): The input DataFrame containing the data to be visualized.
+    Returns: fig: A matplotlib figure object
+    """
+    st.header('Эмоциональная окраска комментариев на YouTube')
+    data = df['label'].value_counts()
+    fig, ax = plt.subplots()
+    plt.title("Эмоциональная окраска комментариев на YouTube")
+    label = df['label'].unique()
+    ax.pie(data, labels=label, autopct='%1.1f%%')
+    return fig
+
+
 def change_url():
     st.session_state.start = False
 
@@ -127,19 +143,13 @@ if st.session_state.start:
     comments_df = download_comments(video_id)
     with st.spinner('Analyzing comments...'):
         full_df,  num_comments = analyze_emotions_in_comments(comments_df)
-        st.success(f'Готово! Обработано {num_comments} комментариев.')     
+        st.success(f'Готово! Обработано {num_comments} комментариев.')
     st.write(full_df)
     st.markdown('***')
 
     # Выводим heatmap комментариев по часам и датам
-    st.pyplot(plot_heatmap_from_dataframe(full_df))    
+    st.pyplot(plot_heatmap_from_dataframe(full_df)) 
     st.markdown('***')
 
-    # Создаем круговую диаграмму
-    st.header('Эмоциональная окраска комментариев на YouTube')
-    data = full_df['label'].value_counts()
-    fig, ax = plt.subplots()
-    plt.title("Эмоциональная окраска комментариев на YouTube")
-    label = full_df['label'].unique()
-    ax.pie(data, labels=label, autopct='%1.1f%%')
-    st.pyplot(fig)
+    # Выводим круговую диаграмму   
+    st.pyplot(visualize_data(full_df))
