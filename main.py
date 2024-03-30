@@ -85,9 +85,9 @@ def plot_heatmap_from_dataframe(df: pd.DataFrame) -> plt:
     df['Date'] = df['published_at'].dt.date
     df['Hour'] = df['published_at'].dt.hour
     pivot_table = df.pivot_table(index='Hour',
-                                columns='Date',
-                                values='text',
-                                aggfunc='count')
+                                 columns='Date',
+                                 values='text',
+                                 aggfunc='count')
     plt.figure(figsize=(10, 6))
     sns.heatmap(pivot_table,
                 cmap='YlGnBu')
