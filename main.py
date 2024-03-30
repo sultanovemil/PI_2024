@@ -27,9 +27,6 @@ def load_model():
 def extract_video_id(url: str) -> str:
     """
     Extracts the video ID from a YouTube video URL.
-    Args:       url (str): The YouTube video URL.
-    Returns:    str: The extracted video ID,
-                or an empty string if the URL is not valid.
     """
     pattern = r"(?<=v=)[\w-]+(?=&|\b)"
     match = re.search(pattern, url)
@@ -41,9 +38,8 @@ def extract_video_id(url: str) -> str:
 
 def download_comments(video_id: str) -> pd.DataFrame:
     """
-    Downloads comments from a YouTube video based on the provided video ID and returns them as a DataFrame.
-    Args: video_id (str): The video ID of the YouTube video.
-    Returns: DataFrame: A DataFrame containing the downloaded comments from the video.
+    Downloads comments from a YouTube video based on the provided video ID
+    and returns them as a DataFrame.
     """
     DEV_KEY = os.getenv('API_KEY_YOUTUBE')
     youtube = googleapiclient.discovery.build("youtube",
@@ -56,13 +52,15 @@ def download_comments(video_id: str) -> pd.DataFrame:
     comments = []
     for item in response['items']:
         comment = item['snippet']['topLevelComment']['snippet']
-        comments.append([comment['authorDisplayName'],
+        comments.append([
+                        comment['authorDisplayName'],
                         comment['publishedAt'],
                         comment['updatedAt'],
                         comment['likeCount'],
                         comment['textDisplay'],])
     return pd.DataFrame(comments,
-                        columns=['author',
+                        columns=[
+                                'author',
                                 'published_at',
                                 'updated_at',
                                 'like_count',
@@ -71,31 +69,28 @@ def download_comments(video_id: str) -> pd.DataFrame:
 
 def analyze_emotions_in_comments(df: pd.DataFrame) -> tuple:
     """
-    Takes a DataFrame with comments, 
+    Takes a DataFrame with comments,
     processes the emotional sentiment of each comment in the DataFrame
-    Args: dataframe (pandas.DataFrame): DataFrame containing comments to analyze.    
-    Returns: tuple: containing the updated DataFrame with the added 'Emotional Sentiment' column
-    and the total count of processed comments.
     """
     model = load_model()
     selected_columns = ['text', 'author', 'published_at']
     df = df[selected_columns]
-    res_list = []    
-    res_list = model(df['text'].to_list())       
+    res_list = []
+    res_list = model(df['text'][:513].to_list())
     full_df = pd.concat([pd.DataFrame(res_list), df], axis=1)
     return (full_df, len(res_list))
 
 
 def plot_heatmap_from_dataframe(df: pd.DataFrame) -> plt:
     """
-    Visualizes the data from the input DataFrame and returns a matplotlib plot object.
-    Args: df (DataFrame): The input DataFrame containing the data to be visualized.
-    Returns: plt: A matplotlib plot object showing the visualization of the data.
+    Visualizes the data from the input DataFrame
+    and returns a matplotlib plot object.
     """
     df['published_at'] = pd.to_datetime(df['published_at'])
     df['Date'] = df['published_at'].dt.date
     df['Hour'] = df['published_at'].dt.hour
-    pivot_table = df.pivot_table(index='Hour',
+    pivot_table = df.pivot_table(
+                                index='Hour',
                                 columns='Date',
                                 values='text',
                                 aggfunc='count')
@@ -108,6 +103,19 @@ def plot_heatmap_from_dataframe(df: pd.DataFrame) -> plt:
     return plt
 
 
+def visualize_data(df: pd.DataFrame):
+    """
+    Visualizes the data from the input DataFrame
+    and returns a matplotlib figure object.
+    """
+    data = df['label'].value_counts()
+    fig, ax = plt.subplots()
+    plt.title("Эмоциональная окраска комментариев на YouTube")
+    label = df['label'].unique()
+    ax.pie(data, labels=label, autopct='%1.1f%%')
+    return fig
+
+
 def change_url():
     st.session_state.start = False
 
@@ -118,7 +126,7 @@ if "start" not in st.session_state:
 # Получаем id видеоролика из URL для отправки запроса
 url = st.text_input(label="Enter URL from YouTube", on_change=change_url)
 video_id = extract_video_id(url)
-if  video_id != "":
+if video_id != "":
     if btn_start := st.button('Загрузить комментарии'):
         st.session_state.start = True
 
@@ -127,19 +135,13 @@ if st.session_state.start:
     comments_df = download_comments(video_id)
     with st.spinner('Analyzing comments...'):
         full_df,  num_comments = analyze_emotions_in_comments(comments_df)
-        st.success(f'Готово! Обработано {num_comments} комментариев.')     
+        st.success(f'Готово! Обработано {num_comments} комментариев.')
     st.write(full_df)
     st.markdown('***')
 
     # Выводим heatmap комментариев по часам и датам
-    st.pyplot(plot_heatmap_from_dataframe(full_df))    
+    st.pyplot(plot_heatmap_from_dataframe(full_df))
     st.markdown('***')
 
-    # Создаем круговую диаграмму
-    st.header('Эмоциональная окраска комментариев на YouTube')
-    data = full_df['label'].value_counts()
-    fig, ax = plt.subplots()
-    plt.title("Эмоциональная окраска комментариев на YouTube")
-    label = full_df['label'].unique()
-    ax.pie(data, labels=label, autopct='%1.1f%%')
-    st.pyplot(fig)
+    # Выводим круговую диаграмму
+    st.pyplot(visualize_data(full_df))
