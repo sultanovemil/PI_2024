@@ -16,4 +16,3 @@ def test_bad_url_input():
     at.run()
     at.text_input[0].input('123').run()
     assert at.session_state["start"] == False
-
