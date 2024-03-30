@@ -58,12 +58,8 @@ def download_comments(video_id: str) -> pd.DataFrame:
                         comment['updatedAt'],
                         comment['likeCount'],
                         comment['textDisplay'],])
-    return pd.DataFrame(comments,
-                        columns=['author',
-                                'published_at',
-                                'updated_at',
-                                'like_count',
-                                'text',])
+    cols = ['author', 'published_at', 'updated_at', 'like_count', 'text']
+    return pd.DataFrame(comments, columns=cols)
 
 
 def analyze_emotions_in_comments(df: pd.DataFrame) -> tuple:
