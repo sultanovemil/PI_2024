@@ -59,8 +59,7 @@ def download_comments(video_id: str) -> pd.DataFrame:
                         comment['likeCount'],
                         comment['textDisplay'],])
     return pd.DataFrame(comments,
-                        columns=[
-                                'author',
+                        columns=['author',
                                 'published_at',
                                 'updated_at',
                                 'like_count',
@@ -89,8 +88,7 @@ def plot_heatmap_from_dataframe(df: pd.DataFrame) -> plt:
     df['published_at'] = pd.to_datetime(df['published_at'])
     df['Date'] = df['published_at'].dt.date
     df['Hour'] = df['published_at'].dt.hour
-    pivot_table = df.pivot_table(
-                                index='Hour',
+    pivot_table = df.pivot_table(index='Hour',
                                 columns='Date',
                                 values='text',
                                 aggfunc='count')
@@ -134,7 +132,7 @@ if st.session_state.start:
     # Выводим таблицу с результатами на странице
     comments_df = download_comments(video_id)
     with st.spinner('Analyzing comments...'):
-        full_df,  num_comments = analyze_emotions_in_comments(comments_df)
+        full_df, num_comments = analyze_emotions_in_comments(comments_df)
         st.success(f'Готово! Обработано {num_comments} комментариев.')
     st.write(full_df)
     st.markdown('***')
